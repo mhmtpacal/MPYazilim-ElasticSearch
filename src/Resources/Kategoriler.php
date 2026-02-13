@@ -130,9 +130,20 @@ final class Kategoriler extends AbstractResource
             ],
         ])->asArray();
 
-        return array_map(
-            fn($hit) => $hit['_source'] ?? [],
-            $resp['hits']['hits'] ?? []
-        );
+        return [
+            'total' => (int)($resp['hits']['total']['value'] ?? 0),
+            'results' => array_map(
+                static function (array $hit): array {
+                    $src = $hit['_source'] ?? [];
+
+                    return [
+                        'kategoriId' => (string)($src['kategoriId'] ?? ''),
+                        'name' => (string)($src['name'] ?? ''),
+                        'url' => (string)($src['url'] ?? ''),
+                    ];
+                },
+                $resp['hits']['hits'] ?? []
+            ),
+        ];
     }
 }
