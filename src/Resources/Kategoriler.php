@@ -131,7 +131,7 @@ final class Kategoriler extends AbstractResource
         ])->asArray();
 
         return array_map(
-            fn($h) => $h['_source']['kategoriId'],
+            fn($hit) => $hit['_source'] ?? [],
             $resp['hits']['hits'] ?? []
         );
     }
