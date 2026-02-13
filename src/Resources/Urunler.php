@@ -82,10 +82,38 @@ final class Urunler extends AbstractResource
             'size' => $limit,
             'body' => [
                 'query' => [
-                    'multi_match' => [
-                        'query' => $q,
-                        'fields' => ['name^5', 'aciklama']
-                    ]
+                    'dis_max' => [
+                        'queries' => [
+                            [
+                                'multi_match' => [
+                                    'query' => $q,
+                                    'type' => 'bool_prefix',
+                                    'fields' => [
+                                        'name_suggest^8',
+                                        'name_suggest._2gram^6',
+                                        'name_suggest._3gram^4',
+                                    ],
+                                ],
+                            ],
+                            [
+                                'multi_match' => [
+                                    'query' => $q,
+                                    'fields' => ['name^6', 'aciklama^2'],
+                                    'operator' => 'and',
+                                ],
+                            ],
+                            [
+                                'multi_match' => [
+                                    'query' => $q,
+                                    'fields' => ['name^4', 'aciklama'],
+                                    'fuzziness' => 'AUTO',
+                                    'prefix_length' => 1,
+                                    'max_expansions' => 50,
+                                ],
+                            ],
+                        ],
+                        'tie_breaker' => 0.3,
+                    ],
                 ],
                 'sort' => [
                     ['_score' => ['order' => 'desc']],

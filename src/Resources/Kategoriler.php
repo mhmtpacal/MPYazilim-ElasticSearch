@@ -78,4 +78,61 @@ final class Kategoriler extends AbstractResource
 
         return ['ok' => true, 'index' => $newIndex];
     }
+
+    public function search(string $q, int $limit = 50): array
+    {
+        $resp = $this->es->client->search([
+            'index' => $this->alias(),
+            'size' => $limit,
+            'body' => [
+                'query' => [
+                    'dis_max' => [
+                        'queries' => [
+                            [
+                                'multi_match' => [
+                                    'query' => $q,
+                                    'type' => 'bool_prefix',
+                                    'fields' => [
+                                        'name_suggest^6',
+                                        'name_suggest._2gram^4',
+                                        'name_suggest._3gram^3',
+                                    ],
+                                ],
+                            ],
+                            [
+                                'match' => [
+                                    'name' => [
+                                        'query' => $q,
+                                        'operator' => 'and',
+                                        'boost' => 4,
+                                    ],
+                                ],
+                            ],
+                            [
+                                'match' => [
+                                    'name' => [
+                                        'query' => $q,
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                        'max_expansions' => 50,
+                                        'boost' => 2,
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'tie_breaker' => 0.3,
+                    ],
+                ],
+                'sort' => [
+                    ['_score' => ['order' => 'desc']],
+                    ['kategoriId' => ['order' => 'desc']],
+                ],
+            ],
+        ])->asArray();
+
+        return array_map(
+            fn($h) => $h['_source']['kategoriId'],
+            $resp['hits']['hits'] ?? []
+        );
+    }
 }
